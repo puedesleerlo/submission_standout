@@ -10,7 +10,7 @@ class FakeModel:
         self.fail_role = None
 
     def describe(self):
-        return {"configured": True, "model": "kimi-test-fixture", "provider": "Test fixture", "mode": "test", "max_calls_per_day": 100}
+        return {"configured": True, "model": "kimi-test-fixture", "provider": "Test fixture", "mode": "test", "max_calls_per_day": 100000}
 
     def complete(self, project_id, job_id, role, system, inputs, contract):
         self.calls.append({"role": role, "inputs": inputs, "job_id": job_id})
@@ -30,6 +30,16 @@ class FakeModel:
                 "rivals": [{"name": f"Counterfactual {i}", "description": "A synthetic applicant with coherent but uncertain strengths and limitations.",
                             "features": dict.fromkeys(dims, 60+i*5)} for i in range(3)],
             }
+        elif role == 'research_planner':
+            prior = inputs['available_policies']
+            result = {'strategies': [{
+                'name': f'Reusable policy {len(prior)+i}',
+                'hypothesis': 'Specific evidence and bounded milestones help the reader assess the offer.',
+                'instructions': 'Start with the institutional problem, select relevant factual support, and propose a bounded evaluation plan. Write plain and specific sentences.',
+                'tradeoff': 'Emphasize verifiable results over breadth of aspiration.',
+                'reflection': 'Previous observations are uncertain evidence, not proof of future performance.',
+                'parents': [prior[-1]['id']] if prior else [], 'evidence_ids': [],
+            } for i in range(2)]}
         elif role == "strategist":
             prior = inputs["available_policies"] if inputs["mode"] != "develop" else []
             result = {"strategies": [{"name": f"{'Refined' if prior else 'Initial'} approach {i+1}",

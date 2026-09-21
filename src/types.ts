@@ -1,4 +1,4 @@
-export type Page = 'studio' | 'brief' | 'evidence' | 'strategies' | 'experiments';
+export type Page = 'studio' | 'brief' | 'evidence' | 'strategies' | 'experiments' | 'research';
 export interface Project { id: string; created_at: string; name: string; institution: string; posting: string; deadline: string; domain: string; focus: string[]; reservation_conditions: string; synthetic: boolean }
 export interface Evidence { id: string; title: string; body: string; kind: string; source: string; status: string; synthetic: boolean; created_at: string }
 export interface PolicyConfig { framing: 'evidence' | 'delivery' | 'hypothesis' | 'mission'; evidence_limit: number; plan_depth: number; compare_alternative: boolean }

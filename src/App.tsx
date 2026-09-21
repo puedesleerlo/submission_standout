@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'rea
 import { ArrowDownToLine, ArrowRight, ArrowUpRight, Beaker, BookOpen, Check, CheckCheck, ChevronDown, ChevronRight, CircleHelp, Clock3, Copy, FileText, FlaskConical, GitBranch, GitMerge, Layers3, LockKeyhole, Plus, RefreshCw, ShieldCheck, X } from 'lucide-react';
 import { api, ApiError, post, signIn } from './api';
 import Studio from './Studio';
+import Research, { Reviewer } from './Research';
+import Showcase from './Showcase';
 import type { Evidence, Package, Page, Policy, Project, Run, RunDetail, Trial, Workspace, Provider } from './types';
 
 const dimensions: Record<string, string> = { fit: 'Focus coverage', evidence: 'Evidence', feasibility: 'Plan structure', originality: 'Hypothesis framing', voice: 'Style checks' };
@@ -10,6 +12,7 @@ const navigation: { id: Page; name: string; icon: typeof FileText }[] = [
   { id: 'studio', name: 'Submission studio', icon: FileText },
   { id: 'brief', name: 'Project brief', icon: FileText }, { id: 'evidence', name: 'Evidence bank', icon: Layers3 },
   { id: 'strategies', name: 'Strategies', icon: GitBranch }, { id: 'experiments', name: 'Experiments', icon: FlaskConical },
+  { id: 'research', name: 'Research study', icon: ShieldCheck },
 ];
 const dateLabel = (date: string) => new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }).format(new Date(date));
 const timeLabel = (date: string) => new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(date));
@@ -38,10 +41,17 @@ function Login({ onLogin, initialError }: { onLogin: () => void; initialError: s
 }
 
 export default function App() {
+  if (import.meta.env.VITE_SHOWCASE_ONLY === '1') return <Showcase/>;
+  if (window.location.pathname === '/showcase') return <Showcase/>;
+  if (window.location.pathname === '/review') return <Reviewer/>;
+  return <Workbench/>;
+}
+
+function Workbench() {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const [provider, setProvider] = useState<Provider|null>(null);
   const [projects, setProjects] = useState<Project[]>([]); const [projectId, setProjectId] = useState('');
-  const [workspace, setWorkspace] = useState<Workspace | null>(null); const [page, setPage] = useState<Page>('studio');
+  const [workspace, setWorkspace] = useState<Workspace | null>(null); const [page, setPage] = useState<Page>(new URLSearchParams(location.search).get('view') === 'research' ? 'research' : 'studio');
   const [selectedRun, setSelectedRun] = useState(''); const [run, setRun] = useState<RunDetail | null>(null);
   const [modal, setModal] = useState<ModalState>(null); const [busy, setBusy] = useState('');
   const [error, setError] = useState(''); const [modalError, setModalError] = useState(''); const [notice, setNotice] = useState('');
@@ -51,7 +61,7 @@ export default function App() {
 
   useEffect(() => {
     const access = new URLSearchParams(window.location.hash.slice(1)).get('access');
-    if (access) history.replaceState(null, '', window.location.pathname);
+    if (access) history.replaceState(null, '', window.location.pathname + window.location.search);
     (async () => {
       try { if (access) await signIn(access); else await api('/session'); setAuthenticated(true); }
       catch (err) { setAuthenticated(false); if (!(err instanceof ApiError && err.status === 401)) setError((err as Error).message); }
@@ -159,7 +169,7 @@ export default function App() {
       <div className="topbar"><span>{project?.domain || 'Workspace'}<ChevronRight size={13} />{navigation.find(item => item.id === page)?.name}</span><span className="local-pill"><ShieldCheck size={14} />Observer workspace</span></div>
       {error && <div className="error-banner" role="alert"><span>{error}</span><button onClick={() => refresh()}><RefreshCw size={14} />Retry</button></div>}
       {notice && <div className="toast" role="status"><CheckCheck size={17} />{notice}<button aria-label="Dismiss notification" onClick={() => setNotice('')}><X size={15} /></button></div>}
-      {!workspace ? <div className="page-body">{loading ? <div className="loading"><span className="spinner" />Loading project…</div> : <Empty title="Create your first submission project" body="Start with a posting and the opportunity you want to pursue." action={<button className="button primary" onClick={() => open({ kind: 'project' })}>New project<Plus size={16} /></button>} />}</div> : <div className="page-body">
+      {page === 'research' ? <div className="page-body"><Research projects={projects}/></div> : !workspace ? <div className="page-body">{loading ? <div className="loading"><span className="spinner" />Loading project…</div> : <Empty title="Create your first submission project" body="Start with a posting and the opportunity you want to pursue." action={<button className="button primary" onClick={() => open({ kind: 'project' })}>New project<Plus size={16} /></button>} />}</div> : <div className="page-body">
         {project?.synthetic && <div className="sample-notice"><Beaker size={16} /><span>Synthetic example. The institution, evidence, and rivals are illustrative.</span><button onClick={() => open({ kind: 'project' })}>Use your own opportunity<ArrowUpRight size={14} /></button></div>}
         <header className="page-header"><div><h1>{page === 'brief' || page === 'studio' ? project?.name : navigation.find(item => item.id === page)?.name}</h1><p>{page === 'studio' ? `${project?.institution} · Submission studio` : page === 'brief' ? `${project?.institution} · ${project?.domain} application` : page === 'evidence' ? 'The facts and sources behind your submission.' : page === 'strategies' ? 'Version the approach. Keep the reasoning behind every change.' : 'Compare strategies against the same hidden selection worlds.'}</p></div>
           {page !== 'studio' && <button className="button secondary" disabled={Boolean(busy) || !workspace.policies.some(p => p.author !== 'kimi')} onClick={() => open({ kind: 'run' })}><FlaskConical size={16} />Reference comparison</button>}

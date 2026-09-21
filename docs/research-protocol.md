@@ -1,6 +1,16 @@
 # Research framing and proposed protocol
 
-Status: proposed research protocol, not an implemented experiment runner.
+Status: the controlled experiment runner is implemented in `backend/research.py` and exposed through the Research study view. The broader procurement benchmark and strategic-rival extensions below remain proposed. No real-world efficacy claim has been established.
+
+## Implemented protocol
+
+The runner compares fixed drafting, random exploration, binary adaptation, privileged full feedback, and shuffled feedback under equal draft/judge slots and shared call ceilings. Fixed drafting leaves proposal calls unused. Training produces two policies per round per arm and evaluates each on all training opportunities with fresh draft replicates. The top two candidates per arm advance to validation. Validation selects one policy per arm by equal-opportunity mean pass fraction, breaking ties by stored policy ID. All five are frozen together before testing. No optimizer runs in validation or test.
+
+Shuffled and genuine binary conditions receive the same prompt and condition label. The control permutes training outcomes across policy/document associations, retaining the marginal outcome distribution. It has no effect when every label is identical. Full-feedback inputs contain only training diagnostics.
+
+Test estimates use opportunities, not world decisions, as the observational units. Complete paired opportunities enter equal-weight means; families are resampled as clusters for 2,000 paired bootstrap draws. Intervals are withheld below three families and remain exploratory above that threshold. Human reviews are collected through a separate randomized, method-blinded queue and are never fed to optimizers. This version has one reviewer assignment with one immutable review per document, not a multi-rater reliability study.
+
+The six-opportunity fixture is a functional demonstration (one training, one validation, four test families). It does not replace a curated dataset, power analysis, independent generation seeds, or real reviewers. Provider generation is stochastic and not exactly reproducible; saved judgments and allocation inputs are auditable. The same Kimi model still supplies generation and the training judge; human review provides a separate assessment channel, not automatic validation of the judge.
 
 ## Relationship to Che
 
@@ -52,7 +62,7 @@ Only afterward hide scoring parameters, replace scalar quality with multiple att
 
 ## Records needed next
 
-Add experiment ID, split, method assignment, opportunity family, budget ledger, generation seed, judge replicate, selection-model version, rival seed, policy version, intervention label, and promotion decision. Existing immutable policies, inputs, outputs, judgments, and trials provide much of the audit foundation. Holdout enforcement, independent judging, experiment scheduling, and champion promotion still need implementation.
+Experiment ID, split, method assignment, opportunity family, budget ledger, selection model, rival worlds, policy versions, and frozen selections are now recorded. Remaining additions include provider-supported generation seeds, repeated independent model judging, multi-rater human reviews, cross-study scheduling, and a global champion registry. Current freeze decisions are scoped to one registered experiment.
 
 Keep a vector of performance by mechanism. Promote a champion only within a declared domain and protocol using validation results. Preserve specialists. A single aggregate score cannot represent every tradeoff.
 

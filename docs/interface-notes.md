@@ -1,5 +1,17 @@
 # Interface direction
 
+## Research and showcase, September 2026
+
+Keep the existing paper, workspace, ink, slate, pine and ochre tokens and IBM Plex Sans. Add a public, static product tour with a recruiter/technical audience switch. Its memorable element is a submission crossing a feedback boundary: the learner sees one bit while the researcher can inspect the assessment. Show an explicitly illustrative document, never fabricated performance claims. The research view uses a partition rail (train, validate/freeze, test, human review) and an aligned method comparison plot. Empty results show what must run, not invented numbers.
+
+```text
+showcase: audience choice | problem + inspectable document/feedback example
+research: study selector | split rail | next stage + registered call budget
+                         | paired results by method | frozen policies + audit
+```
+
+Reviewed against the brief: a generic dashboard of success percentages would conceal the scientific question. Keep opportunity-level uncertainty, freeze state, and actual feedback allowances visible instead. Recruiter copy explains the user benefit; technical copy explains controls and known limits. Stack the document and inspector on mobile.
+
 ## Operable agent workflow, September 2026
 
 The entry point becomes a submission studio: the draft is the focal object, with a two-column document/strategy workspace. A short brief and artifact type replace reference-generator knobs. One primary action develops two competing drafts; the next action explores a new round. Show genuine stage progress, saved outputs, and failures with recovery instructions. Put evaluator internals in the existing experiment inspector. Keep the pine/slate palette and IBM Plex typography. Leave the reference laboratory under advanced tools, clearly separated from Kimi-generated work. Avoid a chat box that hides durable results.

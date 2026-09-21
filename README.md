@@ -2,6 +2,10 @@
 
 See the [research protocol](docs/research-protocol.md) for the relationship to Che's scoring auctions, proposed controlled experiments, and the limits of current simulation results.
 
+**[Open the product tour](https://puedesleerlo.github.io/submission_standout/)** · [Recruiter and technical demo guide](docs/showcase-guide.md)
+
+![Interactive product tour with an inspectable feedback boundary](docs/images/showcase.png)
+
 A local workbench for developing application packages and comparing versioned submission strategies under hidden selection scenarios.
 
 The submission studio uses **Kimi K3** to infer judging scenarios, develop competing writing strategies, draft applications, assess their quality, and explore new policy versions using binary selection feedback. The original reference simulator remains available separately for protocol checks.
@@ -25,6 +29,30 @@ pnpm access
 ```
 
 Open the printed sign-in link. The application runs at `http://127.0.0.1:5173`; the API runs on port 8000. The browser exchanges the link's access key for an HttpOnly session cookie and removes the key from the address bar. Both servers bind to loopback.
+
+The public tour is at `/showcase`. The **Research study** navigation item opens controlled experiments. GitHub Pages serves only the static tour: it has no connected backend, private dossiers, access credentials, or model-call capability. The workflow in `.github/workflows/showcase.yml` rebuilds it from `main`.
+
+## Controlled research studies
+
+Register opportunities into training, validation, and test partitions. Related institution names, exact duplicate postings, and user-defined families cannot cross splits. Semantically similar postings still require human grouping. Postings, evidence, constraints, model identity, prompt hashes, budgets, and seeds are snapshotted at registration.
+
+The backend enforces `created → training → trained → validation → frozen → test → completed`. Validation chooses between two training finalists per method using mean pass rate across opportunities; a stable policy-ID tie-break is recorded. All five selected policies are frozen before any test call. No stage can be reopened. Research samples use separate record types and never enter studio optimization history.
+
+- **Fixed drafting:** the same predeclared instructions, with repeated fresh drafts.
+- **Random exploration:** two new reusable policies per round, without history.
+- **Binary adaptation:** policies can use only previous training pass/fail observations and prior policies.
+- **Full feedback:** a deliberately privileged baseline with training assessments and decision diagnostics.
+- **Shuffled feedback:** the same binary optimizer prompt with training labels reassigned across observations. The marginal pass count is preserved; the optimizer is not told it is in the shuffled arm. Uniform outcomes make this control uninformative.
+
+Methods share identical draft/judge slots and call ceilings; fixed drafting leaves its unused proposal allowance unspent. This is an equal-allowance comparison, not equal realized dollar cost. Actual calls, tokens, and model elapsed time appear separately. Each opportunity has a shared frozen set of 12 competitive worlds. Draft replicates are separate stateless generation calls; provider-level generation determinism is not guaranteed.
+
+Before each paid stage, the server checks that its maximum call allowance fits the remaining UTC daily budget. Insufficient budget leaves the stage unstarted. The six-opportunity fictional pilot has one training, one validation, and four test institutions; its stage ceilings are 91, 41, and 84 calls respectively. These are illustrative data, not a scientific benchmark. With the default 100-call daily cap, stages may need different days. To run a larger study, explicitly configure `STANDOUT_MAX_MODEL_CALLS` on the server before starting. Provider failures retain partial records and stop the study; they are not negative rewards or automatically retried.
+
+Test results average worlds and replicates within each opportunity, then average opportunities equally. The UI shows paired differences against fixed drafting and 95% family-cluster bootstrap intervals (2,000 resamples), withholding intervals below three complete test families. Only opportunities complete for all five methods enter comparisons. Small pilots and multiple comparisons do not support confirmatory claims.
+
+After testing, create a separate **blind review link**. It reveals only randomized documents, postings, and supporting evidence. A human rates clarity, specificity, credibility, feasibility, and recommendation; method labels and model assessments remain hidden. Reviews are immutable and excluded from optimization. This first version supports one review per document, with descriptive opportunity-averaged results; partial coverage can bias comparisons. Reviewer links are local capability URLs, not an internet collaboration deployment.
+
+Exports contain scoped prompts, results, policies, freeze manifests, judgments, paired worlds, budget ledgers, and reviews. Reviewer access tokens are excluded. Protocol enforcement protects the application's workflow, not against a human manually reusing known test data or a process with direct database access. Re-registering a previously inspected test set does not make it a fresh holdout.
 
 ### Kimi configuration
 
@@ -120,6 +148,6 @@ Backend tests cover access separation, hidden-information sentinel checks, provi
 
 ## Next implementation stage
 
-Add public web research and source ingestion; independently verify claims and reservation-condition compliance; extend reusable evidence banks; isolate external tool-using workers; and evaluate optimization on held-out scenarios and opportunities with explicit promotion rules. Current agents use only the sources you supply, and Kimi's style and integrity assessments still require human review. Rival profiles and inferred weights are assumptions, not recovered facts about a real selection process.
+Add public web research and source ingestion; independently verify claims and reservation-condition compliance; extend reusable evidence banks; isolate external tool-using workers; and run adequately powered held-out studies with independent reviewers. Cross-model judging and multiple reviewers per document remain future work. Current agents use only the sources you supply, and Kimi's style and integrity assessments still require human review. Rival profiles and inferred weights are assumptions, not recovered facts about a real selection process.
 
 See [the system design](docs/system-design.md) for the broader architecture, theory, algorithms, agent capabilities, and staged implementation plan. The document describes the target system; not every capability is implemented in this prototype.

@@ -15,6 +15,13 @@ from backend.store import Store, digest
 from backend.agents import Agents, decide
 from backend.agent_contracts import AgentRequest, Judgment
 from backend.llm import Moonshot, ModelError
+from backend.research import Research, ExperimentInput, StageInput, HumanReview
+from backend.schemas import StrictModel
+from pydantic import Field
+
+
+class DemoExperiment(StrictModel):
+    request_key: str = Field(min_length=8, max_length=100)
 
 
 def create_app(data_dir=None, keys=None, seed=True, model=None):
@@ -23,6 +30,7 @@ def create_app(data_dir=None, keys=None, seed=True, model=None):
     store = Store(root / "standout.sqlite3")
     service = Service(store)
     agents = Agents(store, model or Moonshot(store))
+    research = Research(store, agents.model)
     allowed_origins = {f"http://{host}:{port}" for host in ("127.0.0.1", "localhost")
                        for port in (os.environ.get("STANDOUT_WEB_PORT", "5173"), os.environ.get("STANDOUT_API_PORT", "8000"))}
 
@@ -31,13 +39,16 @@ def create_app(data_dir=None, keys=None, seed=True, model=None):
         if seed:
             seed_demo(service)
         agents.recover()
+        research.recover()
         yield
         agents.executor.shutdown(wait=False, cancel_futures=True)
+        research.executor.shutdown(wait=False, cancel_futures=True)
 
     app = FastAPI(title="Submission Standout", version="0.1.0", lifespan=lifespan,
                   docs_url=None, redoc_url=None, openapi_url=None)
     app.state.store, app.state.service = store, service
     app.state.agents = agents
+    app.state.research = research
 
     @app.middleware("http")
     async def local_origin_guard(request: Request, call_next):
@@ -88,6 +99,53 @@ def create_app(data_dir=None, keys=None, seed=True, model=None):
     @app.get("/api/model", dependencies=[Depends(observer)])
     def model_status():
         return agents.model.describe()
+
+    @app.get('/api/research', dependencies=[Depends(observer)])
+    def experiments():
+        with store.connect() as conn:
+            return [{'id': e['id'], 'name': e['name'], 'demo': e['demo'], 'status': research.status(conn, e['id'])}
+                    for e in store.list(conn, 'experiment')]
+
+    @app.post('/api/research', status_code=201, dependencies=[Depends(observer)])
+    def create_experiment(payload: ExperimentInput):
+        return research.create(payload.model_dump())
+
+    @app.post('/api/research/demo', status_code=201, dependencies=[Depends(observer)])
+    def demo_experiment(payload: DemoExperiment):
+        return research.create({'name': 'Six-opportunity pilot', 'assignments': [], 'rounds': 2, 'replicates': 2,
+                                'seed': 17, 'artifact_type': 'Proposal', 'request_key': payload.request_key}, demo=True)
+
+    @app.get('/api/research/{eid}', dependencies=[Depends(observer)])
+    def research_detail(eid: str):
+        return research.detail(eid)
+
+    @app.post('/api/research/{eid}/stages', status_code=202, dependencies=[Depends(observer)])
+    def research_start(eid: str, payload: StageInput):
+        return research.start(eid, payload.model_dump())
+
+    @app.get('/api/research/{eid}/export', dependencies=[Depends(observer)])
+    def research_export(eid: str):
+        return research.export(eid)
+
+    @app.post('/api/research/{eid}/reviewer', dependencies=[Depends(observer)])
+    def review_invite(eid: str):
+        return {'path': '/review#access='+research.invite(eid)}
+
+    def reviewer_token(request: Request):
+        token = request.headers.get('authorization', '').removeprefix('Bearer ')
+        try:
+            research.review_context(token)
+        except PermissionError:
+            raise HTTPException(403, 'A separate reviewer access link is required.') from None
+        return token
+
+    @app.get('/api/review')
+    def blind_review(token=Depends(reviewer_token)):
+        return research.packets(token)
+
+    @app.post('/api/review')
+    def save_blind_review(payload: HumanReview, token=Depends(reviewer_token)):
+        return research.review(token, payload.model_dump())
 
     @app.get("/api/projects/{project_id}/studio", dependencies=[Depends(observer)])
     def studio(project_id: str):
