@@ -14,6 +14,8 @@ Start with a posting and applicant evidence, then click **Develop submission**. 
 
 ## Run locally
 
+For repeatable agent access, see the [MCP and reusable-bank guide](docs/agent-interface.md). The **Reusable banks** view keeps source-backed facts, experience cases, company profiles, professional contacts, and hiring signals available across projects. Import selected revisions into an opportunity without changing older snapshots. Unadvertised opportunities can leave their deadline blank.
+
 Requires Node.js 22+, pnpm 10, and [uv](https://docs.astral.sh/uv/). Python 3.11+ is managed by uv.
 
 ```sh

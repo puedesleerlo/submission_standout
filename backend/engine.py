@@ -127,7 +127,8 @@ def weighted(values, weights):
 def select(package, world):
     assessment = assess(package)
     gates = [
-        {"name": "Within deadline (UTC date)", "passed": world["arrival_date"] <= world["deadline"]},
+        {"name": "Within deadline (UTC date)" if world["deadline"] else "No deadline supplied; gate not applied",
+         "passed": not world["deadline"] or world["arrival_date"] <= world["deadline"]},
         {"name": "Reference format: 100–800 words", "passed": 100 <= assessment["word_count"] <= 800},
         {"name": "At least one attached evidence passage", "passed": assessment["supported_count"] > 0},
     ]

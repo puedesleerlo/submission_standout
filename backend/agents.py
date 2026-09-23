@@ -35,7 +35,8 @@ def decide(package, judgment, world):
     score = weighted(values, world["scenario"]["weights"])
     rank = 1 + sum(r["score"] >= score for r in world["rivals"])
     gates = [
-        {"name": "Within frozen deadline (UTC date)", "passed": world["arrival_date"] <= world["deadline"]},
+        {"name": "Within frozen deadline (UTC date)" if world["deadline"] else "No deadline supplied; gate not applied",
+         "passed": not world["deadline"] or world["arrival_date"] <= world["deadline"]},
         {"name": "Grounded factual claims", "passed": judgment["integrity_passed"]},
         {"name": "Document meets the requested format", "passed": judgment["format_passed"]},
         {"name": "Specific, natural voice (60/100 minimum)", "passed": values["voice"] >= 60},
@@ -45,7 +46,7 @@ def decide(package, judgment, world):
     competitive = world["rule"] != "threshold"
     places = world["places"]
     # The frozen suite uses the initial arrival date; rolling is an explicit stress assumption.
-    if world["rule"] == "rolling" and (datetime.fromisoformat(world["deadline"]) - datetime.fromisoformat(world["arrival_date"])).days <= 7:
+    if world["rule"] == "rolling" and world["deadline"] and (datetime.fromisoformat(world["deadline"]) - datetime.fromisoformat(world["arrival_date"])).days <= 7:
         places = min(places, 1)
     passed = all(g["passed"] for g in gates) and score >= world["minimum_score"] and (not competitive or rank <= places)
     failed = [g["name"] for g in gates if not g["passed"]]

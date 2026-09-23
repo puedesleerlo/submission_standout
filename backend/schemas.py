@@ -11,7 +11,7 @@ class ProjectInput(StrictModel):
     name: str = Field(min_length=2, max_length=120)
     institution: str = Field(min_length=2, max_length=160)
     posting: str = Field(min_length=30, max_length=20000)
-    deadline: date
+    deadline: date | None = None
     domain: Literal["Fellowship", "Grant", "Job"] = "Fellowship"
     focus: list[str] = Field(min_length=1, max_length=8)
     reservation_conditions: str = Field(default="", max_length=3000)

@@ -3,7 +3,7 @@ import hmac
 import os
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi import Depends, FastAPI, HTTPException, Request, Response, Query
 from fastapi.responses import JSONResponse
 
 from backend.engine import assess, public_context, select
@@ -18,6 +18,7 @@ from backend.llm import Moonshot, ModelError
 from backend.research import Research, ExperimentInput, StageInput, HumanReview
 from backend.schemas import StrictModel
 from pydantic import Field
+from backend.library import Library, Bank, BankBatch, BankSelection
 
 
 class DemoExperiment(StrictModel):
@@ -29,6 +30,7 @@ def create_app(data_dir=None, keys=None, seed=True, model=None):
     keys = keys or load_keys(root)
     store = Store(root / "standout.sqlite3")
     service = Service(store)
+    library = Library(store)
     agents = Agents(store, model or Moonshot(store))
     research = Research(store, agents.model)
     allowed_origins = {f"http://{host}:{port}" for host in ("127.0.0.1", "localhost")
@@ -94,7 +96,35 @@ def create_app(data_dir=None, keys=None, seed=True, model=None):
 
     @app.get("/api/health")
     def health():
-        return {"status": "ok"}
+        return {"status": "ok", "application": "submission-standout"}
+
+    @app.get("/api/schema", dependencies=[Depends(observer)])
+    def schema():
+        return app.openapi()
+
+    @app.get("/api/library", dependencies=[Depends(observer)])
+    def library_search(bank: Bank | None = None, query: str = Query(default="", max_length=300),
+                       company: str = Query(default="", max_length=160),
+                       offset: int = Query(default=0, ge=0), limit: int = Query(default=50, ge=1, le=100)):
+        with store.connect() as conn:
+            return library.search(conn, bank, query, company, offset, limit)
+
+    @app.post("/api/library", dependencies=[Depends(observer)])
+    def library_save(payload: BankBatch):
+        if len({e.key for e in payload.entries}) != len(payload.entries):
+            raise ValueError("Use distinct keys in a bank batch.")
+        with store.connect(write=True) as conn:
+            return {"entries": [library.save(conn, e.model_dump(mode="json")) for e in payload.entries]}
+
+    @app.get("/api/library/{entry_id}", dependencies=[Depends(observer)])
+    def library_detail(entry_id: str):
+        with store.connect() as conn:
+            return store.get(conn, "bank_entry", entry_id)
+
+    @app.post("/api/projects/{project_id}/library-import", dependencies=[Depends(observer)])
+    def library_import(project_id: str, payload: BankSelection):
+        with store.connect(write=True) as conn:
+            return library.attach(conn, project_id, payload.entry_ids)
 
     @app.get("/api/model", dependencies=[Depends(observer)])
     def model_status():
